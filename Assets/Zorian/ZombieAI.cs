@@ -2,42 +2,48 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UIElements;
 
 public class ZombieAI : MonoBehaviour
 {
-    public float detectionRadius = 10f; // Радиус обнаружения игрока
-    public float attackDistance = 2f;   // Расстояние для атаки игрока
-    public float moveSpeed = 3.5f;      // Скорость передвижения зомби
-    public float rotationSpeed = 5f;    // Скорость поворота зомби
-    public int damageCount = 10;        // Количество урона
-    public AnimatorOverrideController attackAnimatorController; // Анимационный контроллер для атаки
+    public float detectionRadius = 10f; // Радіус виявлення гравця
+    public float attackDistance = 2f;   // Відстань для атаки гравця
+    public float moveSpeed = 3.5f;      // Швидкість пересування зомбі
+    public float rotationSpeed = 5f;    // Швидкість повороту зомбі
+    public int damageCount = 10;        // Кількість ушкоджень
+    public AnimatorOverrideController attackAnimatorController; // Анімаційний контролер для атаки
 
-    private Transform player;           // Ссылка на игрока
-    private NavMeshAgent navMeshAgent;  // Ссылка на компонент навигации
-    private ZombieSpawner spawner;      // Ссылка на спавнер для учета убитых зомби
-    private Animator animator;          // Компонент анимации
-    private bool isAttacking = false;   // Флаг для проверки атаки
+    private Transform Player;           // Посилання на гравця
+    private NavMeshAgent navMeshAgent;  // Посилання на компонент навігації
+    private ZombieSpawner spawner;      // Посилання на спавнер для обліку вбитих зомбі
+    private Animator animator;          // Компонент анімації
+    private bool isAttacking = false;   // Прапор для перевірки атаки
 
     private void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform; // Поиск игрока по тегу
-        navMeshAgent = GetComponent<NavMeshAgent>(); // Получение компонента навигации
-        spawner = FindObjectOfType<ZombieSpawner>(); // Найти спавнер в сцене
-        animator = GetComponent<Animator>(); // Получение компонента анимации
+        Player = GameObject.FindGameObjectWithTag("Player").transform; // Пошук гравця за тегом
+        navMeshAgent = GetComponent<NavMeshAgent>(); // Отримання компонента навігації
+        spawner = FindObjectOfType<ZombieSpawner>(); // Знайти спавнер на сцені
+        animator = GetComponent<Animator>(); // Отримання компонента анімації
 
-        if (player == null)
+        if (Player == null)
         {
-            Debug.LogError("Player not found!");
+            Debug.LogError("Гравець не знайдений!");
         }
 
         if (navMeshAgent == null)
         {
-            Debug.LogError("NavMeshAgent not found on Zombie!");
+            Debug.LogError("NavMeshAgent не знайдений на зомбі!");
+        }
+
+        if (!navMeshAgent.isActiveAndEnabled)
+        {
+            navMeshAgent.enabled = true;
         }
 
         if (animator == null)
         {
-            Debug.LogError("Animator not found on Zombie!");
+            Debug.LogError("Аніматор не знайдений на зомбі!");
         }
         else if (attackAnimatorController != null)
         {
@@ -47,48 +53,54 @@ public class ZombieAI : MonoBehaviour
 
     private void Update()
     {
-        if (player == null)
+        if (Player == null || navMeshAgent == null)
             return;
 
-        float distance = Vector3.Distance(transform.position, player.position);
+        float distance = Vector3.Distance(transform.position, Player.position);
 
         if (distance <= detectionRadius)
         {
             if (distance > attackDistance)
             {
-                // Преследование игрока
-                navMeshAgent.SetDestination(player.position);
-                animator.SetFloat("Speed", moveSpeed); // Установка параметра скорости
+                // Переслідування гравця
+                if (navMeshAgent.isOnNavMesh)
+                {
+                    navMeshAgent.SetDestination(Player.position);
+                }
+                animator.SetFloat("Speed", moveSpeed); // Встановлення параметра швидкості
 
-                // Поворот зомби к игроку
-                Vector3 direction = (player.position - transform.position).normalized;
+                // Поворот зомбі до гравця
+                Vector3 direction = (Player.position - transform.position).normalized;
                 Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0f, direction.z));
                 transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * rotationSpeed);
 
-                // Сбросить флаг атаки, если зомби не в радиусе атаки
+                // Скидання прапора атаки, якщо зомбі не в радіусі атаки
                 isAttacking = false;
             }
             else if (!isAttacking)
             {
-                // Остановить зомби перед атакой
-                navMeshAgent.SetDestination(transform.position);
-                animator.SetFloat("Speed", 0); // Остановка анимации движения
+                // Зупинка зомбі перед атакою
+                if (navMeshAgent.isOnNavMesh)
+                {
+                    navMeshAgent.SetDestination(transform.position);
+                }
+                animator.SetFloat("Speed", 0); // Зупинка анімації руху
 
-                // Установить флаг атаки
+                // Встановлення прапора атаки
                 isAttacking = true;
 
-                // Проигрывание анимации атаки
+                // Програвання анімації атаки
                 animator.SetTrigger("Attack");
 
-                // Снять HP у игрока
+                // Зняття HP у гравця
                 StartCoroutine(FindObjectOfType<PlayerManager>().Damage(damageCount));
             }
         }
         else
         {
-            // Сбросить флаг атаки, если зомби больше не в радиусе атаки
+            // Скидання прапора атаки, якщо зомбі більше не в радіусі атаки
             isAttacking = false;
-            animator.SetFloat("Speed", 0); // Остановка анимации движения
+            animator.SetFloat("Speed", 0); // Зупинка анімації руху
         }
     }
 
@@ -100,7 +112,3 @@ public class ZombieAI : MonoBehaviour
         }
     }
 }
-
-
-
-
