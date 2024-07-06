@@ -9,7 +9,7 @@ public class ZombieSpawner : MonoBehaviour
     public Transform playerTransform;      // Ссылка на игрока
     public float spawnRadius = 35f;        // Радиус спауна зомби
     public float spawnInterval = 5f;       // Интервал между спаунами
-    public int totalZombies = 51;          // Общее количество зомби
+    public int totalZombies = 60;          // Общее количество зомби
     public GameObject winText;             // Текст победы
     public TextMeshProUGUI killCounterText;  // TextMeshPro элемент для счетчика убийств
 
@@ -48,7 +48,7 @@ public class ZombieSpawner : MonoBehaviour
     {
         zombiesKilled++;
         UpdateKillCounter();
-        if (zombiesKilled >= totalZombies)
+        if (zombiesKilled == totalZombies)
         {
             EndGame();
         }
